@@ -1,0 +1,52 @@
+
+html, body, input, button {
+  background: #333;
+  color: #fe8;
+}
+
+input, button {
+  border: 1px solid #a93;
+}
+
+input:disabled,
+button:disabled {
+  color: #999;
+  border: 1px dashed #666;
+}
+
+input[type=button],
+input[type=submit],
+button {
+  cursor: pointer;
+}
+
+input[type=button]:active,
+input[type=submit]:active,
+button:active {
+  border-color: #fed;
+  color: #ffc;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.components {
+  height: 2em;
+  line-height: 2em;
+  padding: 0 0.3em;
+}
+
+.map-container {
+  position: absolute;
+  top: 2em;
+  bottom: 0;
+  width: 100%;
+}

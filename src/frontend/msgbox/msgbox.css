@@ -1,0 +1,82 @@
+
+.msgbox-wrap {
+    position: initial;
+}
+
+.msgbox-bgcover {
+    position: absolute;
+    z-index: 10000;
+    background: rgba(5, 5, 5, .6);
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.msgbox {
+    position: absolute;
+    z-index: 10001;
+    width: 360px;
+    height: 150px;
+    background: #393939;
+    border-radius: 5px;
+    margin: auto;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.msgbox .content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 35px;
+    margin: auto;
+    padding: 20px 10px;
+    text-align: center;
+    overflow: auto;
+}
+
+.msgbox .button-bar {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 35px;
+    line-height: 35px;
+    text-align: center;
+    background: #3c3c3c;
+    border-radius: 0 0 5px 5px;
+}
+
+.msgbox .button-bar button {
+    padding: 2px 15px;
+    margin: 0 5px;
+}
+
+.msgbox .cut-text {
+    height: 1.2em;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    display: inline-block;
+}
+
+.msgbox .progress {
+    position: absolute;
+    height: 1.2em;
+    width: 300px;
+    margin: auto;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 1px solid #666;
+}
+
+.msgbox .progress .current {
+    height: 100%;
+    width: 0;
+    background: #05f;
+}
+
