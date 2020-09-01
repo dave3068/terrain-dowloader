@@ -17,3 +17,7 @@ export function showProgress(message?: string): Progress {
     return new Progress(message);
 }
 
+/** 显示错误信息 */
+export function showError(msg: string): Promise<MsgRet> {
+    return new MsgBox(msg).show();
+}

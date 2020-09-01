@@ -3,12 +3,13 @@ import fs from 'fs';
 import path from 'path';
 import http from 'http';
 import https from 'https';
-import { Stream } from 'stream';
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 
 import { DownloadConfig, Bounds, TileBounds, TileData, Point } from "./types";
 import { defaultDownloadDir } from "./constants";
 import GeographicTilingScheme from "./GeographicTilingScheme";
+
+import { saveJsonToFile, saveStreamToFile, deleteFile, readJsonFromFile } from "./fileop";
 
 // Cesium官网地形服务的登录地址
 const authUrl = "https://api.cesium.com/v1/assets/1/endpoint?access_token=";
@@ -84,7 +85,7 @@ export class CesiumTerrain {
     _requestMetadata = true;
     _requestWaterMask = false;
 
-    lastError: unknown;
+    lastError: AxiosError | Error;
 
     /** 是否登录过 */
     get authed(): boolean {
@@ -191,7 +192,7 @@ export class CesiumTerrain {
                 };
                 // 保存到文件（方便后续调试）
                 const filePath = path.resolve(this.downloadDir, "auth.json");
-                this.saveJsonToFile(filePath, ret.data);
+                saveJsonToFile(filePath, ret.data);
                 //
                 return true;
             }
@@ -211,7 +212,7 @@ export class CesiumTerrain {
         try {
             //
             if (fs.existsSync(filePath)) {
-                this.layerJson = this.readJsonFromFile(filePath) as LayerJson;
+                this.layerJson = readJsonFromFile(filePath) as LayerJson;
                 return true;
             }
             //
@@ -222,7 +223,7 @@ export class CesiumTerrain {
                 // console.log(ret.data);
                 this.layerJson = ret.data;
                 // save the layer.json file
-                this.saveJsonToFile(filePath, ret.data);
+                saveJsonToFile(filePath, ret.data);
                 return true;
             }
         } catch (error) {
@@ -232,32 +233,44 @@ export class CesiumTerrain {
         return false;
     }
 
+    /** 获得瓦片保存路径 */
+    tileStorePath(downloadDir: string, level: number, x: number, y: number): string {
+        return path.resolve(downloadDir, ''+level, ''+x, y+'.terrain');
+    }
+
     /**
      * 下载并保存地形切片
      */
     async requestTile(level: number, x: number, y: number): Promise<TileData | undefined> {
-        const filePath = path.resolve(this.downloadDir, ''+level, ''+x, y+'.terrain');
+        const filePath = this.tileStorePath(this.downloadDir, level, x, y);
         const url = this.makeTileUrl(level, x, y) as string;
         try {
             // 如果本地存在该文件，则不必下载
             if (fs.existsSync(filePath)) {
-                return undefined;
+                const stat = fs.statSync(filePath);
+                return {
+                    level: level,
+                    x: x,
+                    y: y,
+                    contentBytes: stat.size,
+                };
             }
+            console.log(level, x, y, 'downloading');
             // 从网络下载该文件
             const ret = await axios.get(url, {
                 headers: this.authHeaders,
                 responseType: 'stream',
                 httpAgent: this.httpAgent,
-                httpsAgent: this.httpsAgent
+                httpsAgent: this.httpsAgent,
+                timeout: 30000,
             });
             if (ret.status == 200) {
                 const contentLength = parseInt( ret.headers['content-length'] );
                 // 这个 contentLength 和真实的数据内容没有必然联系（传输gzip后的大小？）
-                console.log(level, x, y);//, contentLength);
                 // save to local file
                 // const data = Buffer.from(ret.data, 'binary');
-                await this.saveStreamToFile(filePath, ret.data);
-                console.log(level, x, y, 'done');
+                await saveStreamToFile(filePath, ret.data);
+                console.log(level, x, y, 'downloaded');
                 //
                 return {
                     level: level,
@@ -270,37 +283,12 @@ export class CesiumTerrain {
         } catch (error) { // { code:'ECONNRESET',syscall:'read',isAxiosError:true,message:"read ECONNRESET",config:{url:'http...'} }
             this.lastError = error;
             console.error(error);
+            // 下载失败，删除该文件（如果存在）
+            deleteFile(filePath);
         }
         return undefined;
     }
 
-    // 将数据保存到文件，如果已存在则不覆盖
-    private saveJsonToFile(filePath: string, data: object): void {
-        fs.mkdirSync(path.dirname(filePath), { recursive: true });
-        if (!fs.existsSync(filePath)) {
-            fs.writeFileSync(filePath, Buffer.from(JSON.stringify(data), 'utf8'));
-        }
-    }
-    // 将数据保存到文件，如果已存在则不覆盖
-    private saveStreamToFile(filePath: string, stream: Stream): Promise<void> {
-        fs.mkdirSync(path.dirname(filePath), { recursive: true });
-        if (!fs.existsSync(filePath)) {
-            const wstream = fs.createWriteStream(filePath, { emitClose: true });
-            // const ret = new Promise<void>((resolve) => {
-            //     wstream.on('close', ()=>resolve());
-            // });
-            stream.pipe(wstream);
-            // return ret;
-            return Promise.resolve();
-        }
-        return Promise.reject();
-    }
-
-    // 从文件读取JSON数据
-    private readJsonFromFile(filePath: string): object {
-        const str = fs.readFileSync(filePath, { encoding: 'utf8' });
-        return JSON.parse(str);
-    }
 
 }
 

@@ -4,12 +4,14 @@ import axios from 'axios';
 // import socketio from "socket.io-client";
 
 import { getPageUrlParam } from '../utils';
-import { showConfirm, showProgress, Progress } from '../msgbox';
+import { showConfirm, showProgress, Progress, showError } from '../msgbox';
 import { mapView } from '../map-view';
 
 
 // 默认 Cesium token 值
-const defaultToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIyYmFmMDZjZi03ZTIzLTRmNDYtYmM4MS1hZmUyOTNlZWQ4N2MiLCJpZCI6MjU5LCJzY29wZXMiOlsiYXNyIiwiZ2MiXSwiaWF0IjoxNTgwNzQ2MDQzfQ.I05JcRTUCUA1RWX2y0oQa_p4dFV6tgaAKHrCU5AjlgI';
+// const defaultToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIyYmFmMDZjZi03ZTIzLTRmNDYtYmM4MS1hZmUyOTNlZWQ4N2MiLCJpZCI6MjU5LCJzY29wZXMiOlsiYXNyIiwiZ2MiXSwiaWF0IjoxNTgwNzQ2MDQzfQ.I05JcRTUCUA1RWX2y0oQa_p4dFV6tgaAKHrCU5AjlgI';
+// const defaultToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwNjk5ODcyYS00MWMyLTQ1NjctYTRhYS0zMmM3ZjYzMGM2ZGEiLCJpZCI6MjU5LCJzY29wZXMiOlsiYXNyIiwiZ2MiXSwiaWF0IjoxNTkxMDI3NDUwfQ.xUBBQH34cd86pfNMSQ6tBBelRx3g_RS51-nSUFlZq24';
+const defaultToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3N2JjMzBlOC1hZTdjLTQwZDItOTkxYi05M2JhMTI5ZGM0YWYiLCJpZCI6MjU5LCJzY29wZXMiOlsiYXNyIiwiZ2MiXSwiaWF0IjoxNTk2NDY1OTgyfQ.5YL6fQO9PaD4pomg0ivU1sD1FbFt1aCqzNXUcfk1eZw';
 
 // 后台服务的基准路径
 const baseUrl = `http://localhost:${getPageUrlParam('port')}/`;
@@ -150,7 +152,10 @@ es.addEventListener('message', (evt: MessageEvent): void => {
             currentProgress?.message("正在下载 " + (100 * percent).toFixed(1) + "%");
         } else if (o?.type == "done") {
             currentProgress?.close();
-            showConfirm("下载完成");
+            showConfirm(`下载完成<br>保存目录 <span style="max-width:120px;" class="cut-text">${currentFolder}</span>`);
+        } else if (o?.type == "error") {
+            currentProgress?.close();
+            showError(o?.message);
         }
     }
 });
@@ -176,6 +181,7 @@ async function downloadAction(form: FromElms): Promise<void> {
         const ret = await startDownload(token);
         if ('ok' != ret.result) {
             currentProgress.close();
+            showError(ret.message as string);
         }
     }
 }

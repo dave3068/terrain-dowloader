@@ -44,7 +44,7 @@ export interface TileData {
     x: number;
     y: number;
     contentBytes: number;
-    data: Buffer;
+    data?: Buffer;
 }
 
 

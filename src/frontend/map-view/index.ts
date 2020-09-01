@@ -56,7 +56,7 @@ export class MapView {
             layers: [
                 new TileLayer({
                     source: new XYZ({
-                        url: 'https://www.google.cn/maps/vt?lyrs=s&x={x}&y={y}&z={z}'
+                        url: 'https://www.google.com/maps/vt?lyrs=s&x={x}&y={y}&z={z}'
                     })
                 })
             ],

@@ -11,6 +11,7 @@ import { dialog } from 'electron';
 import globalvars from "../globalvars";
 import { getDiskSpaceByPath } from "../utils/diskspace";
 import { downloadManager, defaultDownloadDir, DownloadEvent, DownlaodEventType } from "../downloader";
+import { AxiosError } from 'axios';
 
 
 declare interface Error {
@@ -128,9 +129,17 @@ class BGServer {
                         }
                     }) as DownloadEvent;
                 }
+                //
+                res.json({ result: 'ok' });
+            } else {
+                if (!downloadManager.terrain.authed) {
+                    // 服务器上登录验证失败
+                    const error = downloadManager.terrain.lastError as AxiosError;
+                    res.json({ result: 'error', message: 'Server Auth Failed: ' + JSON.stringify(error?.response?.data) });
+                } else {
+                    res.json({ result: 'error', message: 'unknow' });
+                }
             }
-            //
-            res.json({ result: 'ok' });
         });
         // 弹出文件选择框
         this.app.post('/select-folder', async (req, res) => {

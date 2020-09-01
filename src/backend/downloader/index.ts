@@ -2,6 +2,7 @@
 import { CesiumTerrain } from "./CesiumTerrain";
 import { DownloadConfig, TileBounds, DownloadProgress, DownloadEvent, DownlaodEventType } from "./types";
 import { defaultDownloadDir } from "./constants";
+import { AxiosError } from "axios";
 
 export { defaultDownloadDir, DownloadEvent, DownlaodEventType };
 
@@ -22,8 +23,16 @@ export class DownloadManager {
     /** 开始下载任务 */
     async startDownload(config: DownloadConfig): Promise<DownloadProgress | undefined> {
         //
-        if (!this.terrain.authed && await this.terrain.auth(config.token)) {
-            await this.terrain.requestLayerJson();
+        if (!this.terrain.authed) {
+            if (await this.terrain.auth(config.token)) {
+                await this.terrain.requestLayerJson();
+            } else {
+                const error = this.terrain.lastError as AxiosError;
+                if (error.response && error.response.status == 401) {
+                    console.error('Server Auth Failed: ', JSON.stringify(error.response.data));
+                }
+                return undefined;
+            }
         }
         if (this.terrain.authed) {
             // this.terrain.requestTile(0, 0, 0); return;
@@ -49,12 +58,19 @@ export class DownloadManager {
                             for (let x = b.minX; x <= b.maxX; x++) {
                                 try {
                                     // await this.terrain.requestTile(z, x, y);
-                                    await self.terrain.requestTile(z, x, y);
-                                    progress.downloaded++;
+                                    const data = await self.terrain.requestTile(z, x, y);
+                                    if (data) {
+                                        progress.downloaded++;
+                                    } else {
+                                        progress.errorCount++;
+                                        if (progress.eventCallback) {
+                                            progress.eventCallback('error', ''+self.terrain.lastError.message);
+                                        }
+                                    }
                                 } catch (error) {
                                     progress.errorCount++;
                                     if (progress.eventCallback) {
-                                        progress.eventCallback('error', ''+error);
+                                        progress.eventCallback('error', ''+error.message);
                                     }
                                 }
                                 //
@@ -78,6 +94,10 @@ export class DownloadManager {
             return progress;
         }
         return undefined;
+    }
+
+    async downloadTile(): Promise<void> {
+        // TODO
     }
 
     // 计算待下载的瓦片总个数
